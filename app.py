@@ -27,7 +27,7 @@ from ai_data_science_team import (
 # * APP INPUTS ----
 
 MODEL_LIST = ["gpt-4o-mini", "gpt-4o"]
-TITLE = "Pandas Data Analyst AI Copilot"
+TITLE = "Analise de Dados com IA"
 
 # ---------------------------
 # Streamlit App Configuration
@@ -39,20 +39,19 @@ st.set_page_config(
 )
 st.title(TITLE)
 
-st.markdown("""
-Welcome to the Pandas Data Analyst AI. Upload a CSV or Excel file and ask questions about the data.  
-The AI agent will analyze your dataset and return either data tables or interactive charts.
-""")
 
-with st.expander("Example Questions", expanded=False):
+with st.expander("Exemplos", expanded=False):
     st.write(
         """
-        ##### Bikes Data Set:
-        
-        -  Show the top 5 bike models by extended sales.
-        -  Show the top 5 bike models by extended sales in a bar chart.
-        -  Show the top 5 bike models by extended sales in a pie chart.
-        -  Make a plot of extended sales by month for each bike model. Use a color to identify the bike models.
+            Conjunto de Dados de Bicicletas:
+
+             - Mostre os 5 principais modelos de bicicleta por vendas estendidas.
+
+             - Mostre os 5 principais modelos de bicicleta por vendas estendidas em um gráfico de barras.
+
+             - Mostre os 5 principais modelos de bicicleta por vendas estendidas em um gráfico de pizza.
+
+             - Faça um gráfico de vendas estendidas por mês para cada modelo de bicicleta. Use cores para identificar os modelos de bicicleta.
         """
     )
 
@@ -60,12 +59,12 @@ with st.expander("Example Questions", expanded=False):
 # OpenAI API Key Entry and Test
 # ---------------------------
 
-st.sidebar.header("Enter your OpenAI API Key")
+st.sidebar.header("Insira sua chave API")
 
 st.session_state["OPENAI_API_KEY"] = st.sidebar.text_input(
     "API Key",
     type="password",
-    help="Your OpenAI API key is required for the app to function.",
+    help="Sua Chave de API da OpenAI é necessária para iniciar o aplicativo.",
 )
 
 # Test OpenAI API Key
@@ -77,17 +76,17 @@ if st.session_state["OPENAI_API_KEY"]:
     try:
         # Example: Fetch models to validate the key
         models = client.models.list()
-        st.success("API Key is valid!")
+        st.success("Chave API é valida!")
     except Exception as e:
-        st.error(f"Invalid API Key: {e}")
+        st.error(f"Chave API invalida: {e}")
 else:
-    st.info("Please enter your OpenAI API Key to proceed.")
+    st.info("Por favor, insira sua Chave de API da OpenAI para continuar.")
     st.stop()
 
 
 # * OpenAI Model Selection
 
-model_option = st.sidebar.selectbox("Choose OpenAI model", MODEL_LIST, index=0)
+model_option = st.sidebar.selectbox("Escolha o Modelo OpenAI", MODEL_LIST, index=0)
 
 llm = ChatOpenAI(model=model_option, api_key=st.session_state["OPENAI_API_KEY"])
 
@@ -97,8 +96,8 @@ llm = ChatOpenAI(model=model_option, api_key=st.session_state["OPENAI_API_KEY"])
 # ---------------------------
 
 st.markdown("""
-Upload a CSV or Excel file and ask questions about your data.  
-The AI agent will analyze your dataset and return either data tables or interactive charts.
+Carregue um arquivo CSV ou Excel e faça perguntas sobre seus dados.
+O agente de IA analisará seu conjunto de dados e retornará tabelas de dados ou gráficos interativos.
 """)
 
 uploaded_file = st.file_uploader(
@@ -106,14 +105,24 @@ uploaded_file = st.file_uploader(
 )
 if uploaded_file is not None:
     if uploaded_file.name.endswith(".csv"):
-        df = pd.read_csv(uploaded_file)
+        # Tenta primeiro com encoding UTF-8 e separador ;
+        try:
+            df = pd.read_csv(uploaded_file, sep=';', encoding='utf-8')
+        except UnicodeDecodeError:
+            # Se falhar, tenta com encoding Latin-1 comum em arquivos em português
+            try: 
+                uploaded_file.seek(0)  # Volta ao início do arquivo
+                df = pd.read_csv(uploaded_file, sep=';', encoding='latin-1')
+            except UnicodeDecodeError:
+                uploaded_file.seek(0)  # Volta ao início do arquivo
+                df = pd.read_csv(uploaded_file)
     else:
         df = pd.read_excel(uploaded_file)
 
     st.subheader("Data Preview")
     st.dataframe(df.head())
 else:
-    st.info("Please upload a CSV or Excel file to get started.")
+    st.info("Por favor, carregue um arquivo CSV ou Excel para iniciar.")
     st.stop()
 
 # ---------------------------
@@ -122,7 +131,7 @@ else:
 
 msgs = StreamlitChatMessageHistory(key="langchain_messages")
 if len(msgs.messages) == 0:
-    msgs.add_ai_message("How can I help you?")
+    msgs.add_ai_message("Como posso ajudá-lo?")
 
 if "plots" not in st.session_state:
     st.session_state.plots = []
@@ -177,12 +186,12 @@ pandas_data_analyst = PandasDataAnalyst(
 # Chat Input and Agent Invocation
 # ---------------------------
 
-if question := st.chat_input("Enter your question here:", key="query_input"):
+if question := st.chat_input("Insira sua pergunta aqui:", key="query_input"):
     if not st.session_state["OPENAI_API_KEY"]:
-        st.error("Please enter your OpenAI API Key to proceed.")
+        st.error("Por favor, insira sua Chave de API da OpenAI para continuar.")
         st.stop()
 
-    with st.spinner("Thinking..."):
+    with st.spinner("Analisando..."):
         st.chat_message("human").write(question)
         msgs.add_user_message(question)
 
@@ -194,10 +203,10 @@ if question := st.chat_input("Enter your question here:", key="query_input"):
             result = pandas_data_analyst.get_response()
         except Exception as e:
             st.chat_message("ai").write(
-                "An error occurred while processing your query. Please try again."
+                "Ocorreu um erro ao processar sua consulta. Por favor, tente novamente."
             )
             msgs.add_ai_message(
-                "An error occurred while processing your query. Please try again."
+                "Ocorreu um erro ao processar sua consulta. Por favor, tente novamente."
             )
             st.stop()
 
@@ -213,7 +222,7 @@ if question := st.chat_input("Enter your question here:", key="query_input"):
                 else:
                     plot_json = plot_data
                 plot_obj = pio.from_json(plot_json)
-                response_text = "Returning the generated chart."
+                response_text = "Gráfico gerado."
                 # Store the chart
                 plot_index = len(st.session_state.plots)
                 st.session_state.plots.append(plot_obj)
@@ -222,14 +231,14 @@ if question := st.chat_input("Enter your question here:", key="query_input"):
                 st.chat_message("ai").write(response_text)
                 st.plotly_chart(plot_obj)
             else:
-                st.chat_message("ai").write("The agent did not return a valid chart.")
-                msgs.add_ai_message("The agent did not return a valid chart.")
+                st.chat_message("ai").write("O agente não retornou um gráfico válido.")
+                msgs.add_ai_message("O agente não retornou um gráfico válido.")
 
         elif routing == "table":
             # Process table result
             data_wrangled = result.get("data_wrangled")
             if data_wrangled is not None:
-                response_text = "Returning the data table."
+                response_text = "Tabela gerada."
                 # Ensure data_wrangled is a DataFrame
                 if not isinstance(data_wrangled, pd.DataFrame):
                     data_wrangled = pd.DataFrame(data_wrangled)
@@ -240,15 +249,16 @@ if question := st.chat_input("Enter your question here:", key="query_input"):
                 st.chat_message("ai").write(response_text)
                 st.dataframe(data_wrangled)
             else:
-                st.chat_message("ai").write("No table data was returned by the agent.")
-                msgs.add_ai_message("No table data was returned by the agent.")
+                st.chat_message("ai").write("O agente não retornou uma tabela válida.")
+                msgs.add_ai_message("O agente não retornou uma tabela válido.")
         else:
             # Fallback if routing decision is unclear or if chart error occurred
             data_wrangled = result.get("data_wrangled")
             if data_wrangled is not None:
                 response_text = (
-                    "I apologize. There was an issue with generating the chart. "
-                    "Returning the data table instead."
+                    "Houve um problema ao gerar o gráfico. " 
+                    "Estou retornando a tabela de dados em seu lugar."
+                    
                 )
                 if not isinstance(data_wrangled, pd.DataFrame):
                     data_wrangled = pd.DataFrame(data_wrangled)
@@ -260,7 +270,7 @@ if question := st.chat_input("Enter your question here:", key="query_input"):
                 st.dataframe(data_wrangled)
             else:
                 response_text = (
-                    "An error occurred while processing your query. Please try again."
+                    "Ocorreu um erro ao processar sua consulta. Por favor, tente novamente."
                 )
                 msgs.add_ai_message(response_text)
                 st.chat_message("ai").write(response_text)
